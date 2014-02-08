@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+		<title>Attribute Table Sample</title>
+
+		<link rel="stylesheet" href="http://js.arcgis.com/3.8/js/esri/css/esri.css">
+		<link rel="stylesheet" href="http://js.arcgis.com/3.8/js/dojo/dijit/themes/claro/claro.css">
+
+		<style>
+			html, body, #map {
+				height: 100%;
+				width: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				background-color: #FFF;
+				overflow: hidden;
+				font-family: "Arial";
+			}
+		</style>
+		
+		<script>
+			var dojoConfig = {
+
+			parseOnLoad : true,
+	
+			packages:[{
+				name : 'js',
+				location : location.pathname.replace(/\/[^/]+$/, '') + '/js'
+			}]
+			};
+
+		</script>
+		<script src="http://js.arcgis.com/3.8/"></script>
+
+
+
+		<script>
+			require(["dojo/on", /* */
+			"esri/map", /* */
+			"esri/geometry/Point", /* */
+			"esri/SpatialReference", /* */
+			"esri/layers/FeatureLayer", /* */
+			"esri/IdentityManager", /* */
+			"dijit/layout/BorderContainer", /* */
+			"dijit/layout/ContentPane", /* */
+			"js/Widgets/AttributeTable", /* */
+			"dojo/domReady!" /* */
+			], function(on, Map, Point, SpatialReference, FeatureLayer, IdentityManager, BorderContainer, ContentPane, AttributeTable) {
+
+				// create a BorderContainer as the top widget in the hierarchy
+				var bc = new BorderContainer({
+					gutters : true,
+					liveSplitters : true,
+					style : "height: 100%; width: 100%;"
+				});
+
+				var cp1 = new ContentPane({
+					id : "map",
+					splitter : true,
+					region : "center"
+				});
+				bc.addChild(cp1);
+
+				var cp2 = new ContentPane({
+					id: "grid",
+					region : "bottom",
+					style : "height: 250px",
+					splitter : true
+				});
+				bc.addChild(cp2);
+
+				bc.placeAt(document.body);
+				bc.startup();
+
+				var map = new Map("map", {
+					basemap : "topo",
+					center : new Point([2512386.352240346, 6663975.576089222], new SpatialReference(3857)),
+					zoom : 17,
+					sliderStyle : "small"
+				});
+
+				var featureLayer = new FeatureLayer("http://services1.arcgis.com/2pNJu1hJtPYeNHa8/arcgis/rest/services/ulicea/FeatureServer/0", {
+					mode : FeatureLayer.MODE_ONDEMAND,
+					outFields: ["*"]
+				});
+				
+				featureLayer.id = "Ulice";
+				map.addLayer(featureLayer);
+	
+				var attributeTable = new AttributeTable();
+				
+				on(attributeTable, "error", function(error){
+					alert(error.message || "Attribute Table error.");
+				});	
+				
+				var updateEnd = on(featureLayer, "update-end", function(){
+					updateEnd.remove();
+					attributeTable.setFeatureLayer(featureLayer);
+					attributeTable.startup();		
+				});
+							
+				
+				
+				
+			});
+		</script>
+	</head>
+
+	<body class="claro">
+
+	</body>
+</html>
