@@ -14,7 +14,7 @@ Soon there will be more;]
 
 ## How to use it:
 
-The AttributeTable constructor requires three parameters:
+The AttributeTable constructor requires three parameters:  
 1. options  
 2. reference to the map  
 3. specify the id af an element, where the attribute table will be placed  
@@ -29,4 +29,8 @@ var attributeTable = new AttributeTable({
     }
 }, map, "targetElementId");
 ```
-
+Now we need to set the feature layer.
+```javascript
+attributeTable.setFeatureLayer(yourFeatureLayer);	
+```
+Note: make sure that the feature layer is loaded before you do that!
