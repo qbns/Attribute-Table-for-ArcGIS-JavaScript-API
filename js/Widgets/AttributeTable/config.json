@@ -1,7 +1,7 @@
 {
 	"featureLayers": {
 		"http://services1.arcgis.com/2pNJu1hJtPYeNHa8/arcgis/rest/services/ulicea/FeatureServer/0": {
-			"fields": ["NAME", "PRETYPE", "TYPE", "ROAD_CL", "L_PLACE"]
+			"fields": ["OBJECTID","NAME", "PRETYPE", "TYPE", "ROAD_CL", "L_PLACE"]
 		}
 	}
 }

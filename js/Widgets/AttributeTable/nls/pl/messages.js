@@ -1,5 +1,6 @@
 define({
 	errors : {
-		"featLayNotSpec" : "Nie zdefiniowano warstwy obiektowej."
+		"featLayNotSpec" : "Nie zdefiniowano warstwy obiektowej.",
+		"targetIdNotSpec": "Nie podano ID elementu docelowego."
 	}
 }); 

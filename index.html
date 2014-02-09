@@ -7,15 +7,15 @@
 
 		<link rel="stylesheet" href="http://js.arcgis.com/3.8/js/esri/css/esri.css">
 		<link rel="stylesheet" href="http://js.arcgis.com/3.8/js/dojo/dijit/themes/claro/claro.css">
-
+		
 		<style>
-			html, body, #map {
+			html, body, #map, #attributeTable {
 				height: 100%;
 				width: 100%;
 				margin: 0;
 				padding: 0;
 			}
-			body {
+			body, #map {
 				background-color: #FFF;
 				overflow: hidden;
 				font-family: "Arial";
@@ -66,9 +66,9 @@
 				bc.addChild(cp1);
 
 				var cp2 = new ContentPane({
-					id: "grid",
+					id: "attributeTable",
 					region : "bottom",
-					style : "height: 250px",
+					style : "height: 250px; width: 100%",
 					splitter : true
 				});
 				bc.addChild(cp2);
@@ -91,7 +91,12 @@
 				featureLayer.id = "Ulice";
 				map.addLayer(featureLayer);
 	
-				var attributeTable = new AttributeTable();
+				addStylesheet("http://js.arcgis.com/3.8/js/dgrid/css/skins/claro.css");
+				var attributeTable = new AttributeTable({
+					dgrid: {
+						
+					}
+				}, map, "attributeTable");
 				
 				on(attributeTable, "error", function(error){
 					alert(error.message || "Attribute Table error.");
@@ -99,14 +104,21 @@
 				
 				var updateEnd = on(featureLayer, "update-end", function(){
 					updateEnd.remove();
-					attributeTable.setFeatureLayer(featureLayer);
-					attributeTable.startup();		
+					attributeTable.setFeatureLayer(featureLayer);		
 				});
 							
 				
-				
-				
 			});
+			
+			function addStylesheet(url){
+				var tagPosition = document.getElementsByTagName('head')[0];
+   				var scriptElement = document.createElement('link');
+    			scriptElement.setAttribute('rel', 'stylesheet');
+    			scriptElement.setAttribute('type','text/css');
+    			scriptElement.setAttribute('href', url);
+    			tagPosition.appendChild(scriptElement);				
+			}
+
 		</script>
 	</head>
 

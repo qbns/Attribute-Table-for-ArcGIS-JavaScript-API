@@ -2,7 +2,8 @@ define({
 	
   	root: {
   		errors: {
-  			"featLayNotSpec": "There's no Feature Layer specified."
+  			"featLayNotSpec": "There's no Feature Layer specified.",
+  			"targetIdNotSpec": "Target element ID not specified."
   		}
   	},
   	

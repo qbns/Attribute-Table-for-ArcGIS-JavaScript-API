@@ -1,9 +1,5 @@
 /**
  * Attribute Table widget
- *
- * Creates an instance of a dgrid, then fills it with a specified FeatureLayer's data.
- * 
- * TODO: Alot
  */
 define(["dojo/Evented", //
 "dojo/_base/declare", //
@@ -12,111 +8,158 @@ define(["dojo/Evented", //
 "dojo/request/xhr", //
 "dojo/store/Memory", //
 "dojo/i18n!js/Widgets/AttributeTable/nls/messages", //
-"dgrid/OnDemandGrid" //
-], function(Evented, //
+"dgrid/OnDemandGrid", //
+"dgrid/Keyboard", //
+"dgrid/Selection", //
+"esri/layers/GraphicsLayer"], function(Evented, //
 declare, //
 lang, //
 Deferred, //
 xhr, //
 Memory, //
 i18n, //
-Grid //
-) {
+Grid, //
+Keyboard, //
+Selection, //
+GraphicsLayer) {
 	return declare([Evented], {
-		config: {},
-		constructor : function(options) {
+		config : {},
+		constructor : function(options, map, targetId) {
 
-			this._init();
-			
+			this._map = map;
+			this._targetId = targetId;
+			this._init(options);
+
 		},
-		
-		_init: function(){
-			
+
+		_init : function(options) {
+
+			// Load configuration file
 			var deferred = new Deferred();
-			xhr("js/Widgets/AttributeTable/config.json",{
+			xhr("js/Widgets/AttributeTable/config.json", {
 				handleAs : "json",
 			}).then(lang.hitch(this, "_configLoaded"));
 
-			
+			// Initialize Memory Store and DGrid
 			this.store = new Memory();
-			this.grid = new Grid({
-				store: this.store
-			}, "grid");
-			
-			//this.grid.startup();
-			
+			this.grid = declare([ Grid, Keyboard, Selection ])({
+				store : this.store
+			}, this._targetId);
+
+			// Set options for the DGrid
+			if (options.dgrid) {
+				lang.mixin(this.grid, options.dgrid);
+			}
+
+			this._configureAttTableGraphicsLayer();
+
 			return deferred;
 		},
-		
-		_configLoaded: function(data){
+
+		_configLoaded : function(data) {
 			this.config = data;
 		},
-		
+
+		_configureAttTableGraphicsLayer : function() {
+
+			// If there is more than one attribute table, there will be more than one Attribute Table graphics layer
+			var layerNumber = 0;
+			var layerName = "AttrTableGfxLayer";
+
+			while (this._map.getLayer(layerName + layerNumber)) {
+				layerNumber += 1;
+			}
+
+			layerName = layerName + layerNumber;
+
+			this._graphicsLayer = new GraphicsLayer({
+				id : layerName
+			});
+
+			this._map.addLayer(this._graphicsLayer);
+
+		},
+
 		/*
-		 * Changes the current feature layer
-		 * Redefines the dgrid store and layout.
+		 * Change current feature layer,
+		 * redefines the dgrid columns and populates the store.
 		 */
 		setFeatureLayer : function(featureLayer, options) {
-		
+
+			if (this._featureLayerUpdateListener) {
+				this._featureLayerUpdateListener.remove();
+			}
+
 			this.columns = [];
-			
+
 			this.dataConfig = {};
-			
-			if (this.config.featureLayers && this.config.featureLayers[featureLayer.url]){
+
+			var idProperty = "id";
+
+			// If specific fields were defined in the config file for this layer
+			if (this.config.featureLayers && this.config.featureLayers[featureLayer.url]) {
+
 				this.dataConfig.fields = this.config.featureLayers[featureLayer.url].fields;
-				
-				if (this.dataConfig.fields){
-					for (var i in this.dataConfig.fields){
-						
-						for (var j in featureLayer.fields){
-							
-							if (featureLayer.fields[j].name == this.dataConfig.fields[i]){
-								
+
+				if (this.dataConfig.fields) {
+					for (var i in this.dataConfig.fields) {
+
+						if (this.dataConfig.fields[i].toLowerCase() == "objectid") {
+							idProperty = this.dataConfig.fields[i];
+						}
+
+						for (var j in featureLayer.fields) {
+
+							if (featureLayer.fields[j].name == this.dataConfig.fields[i]) {
+
 								this.columns.push({
-									field: featureLayer.fields[j].name,
-									label: featureLayer.fields[j].alias
+									field : featureLayer.fields[j].name,
+									label : featureLayer.fields[j].alias
 								});
 								break;
 							}
+
 						}
 					}
 
 				}
-				
-			}
-			
-		 	var data = [];
-		 	
-		 	for (var i in featureLayer.graphics){
-		 		data.push(featureLayer.graphics[i].attributes);
-		 	}
-		 	
-		 	
-		 	var fakeData = [
-		 		{OBJECTID:"1", NAME:"test", PRETYPE:"test", TYPE:"test", ROAD_CL:"test", L_PLACE:"test"}
-		 	];
-		 	
-		 	this.store.setData(data);
-		 	this.store.idProperty = "OBJECTID";
 
-		 	this.grid.setColumns(this.columns);
+			}
+			// Add all of the layer's fields (except editor / shape / globalid fields)
+			else {
+				for (var i in featureLayer.fields) {
+					this.columns.push({
+						field : featureLayer.fields[i].name,
+						label : featureLayer.fields[i].alias
+					});
+				}
+			}
+
+			this.store.idProperty = idProperty;
 
 			this.featureLayer = featureLayer;
-			
+
+			this._featureLayerUpdateListener = featureLayer.on("update-end", lang.hitch(this, 'populateStore'));
+
+			this.populateStore();
+
+			this.grid.setColumns(this.columns);
+
 		},
 
-		startup : function() {
-			if (typeof this.featureLayer == 'undefined'){
-				this.emit("error", {
-					message: i18n.errors.featLayNotSpec
-				});
-			}
-			else {
-				
-				
-			}
-			
+		/*
+		 * Fill the Memory store with the feature layer's attributes
+		 */
+		populateStore : function() {
 
+			var data = [];
+
+			for (var i in this.featureLayer.graphics) {
+				data.push(this.featureLayer.graphics[i].attributes);
+			}
+
+			this.store.setData(data);
+			this.grid.refresh();
 		}
 	});
 });
