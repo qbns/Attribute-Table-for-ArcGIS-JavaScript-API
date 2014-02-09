@@ -9,15 +9,15 @@ The widget itself isn't a sophisticated piece of code (yet :D). I do not know ma
 
 ## Current features:
 1. Switch feature layer on the fly.
-2. Support for internationalization.
+2. Support for internationalization.  
 Soon there will be more;]
 
 ## How to use it:
 
 The AttributeTable constructor requires three parameters:
-1. options
-2. reference to the map
-3. specify the id af an element, where the attribute table will be placed
+1. options  
+2. reference to the map  
+3. specify the id af an element, where the attribute table will be placed  
  
 Example code that initializes the attribute table:
 
