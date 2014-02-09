@@ -1,5 +1,5 @@
-/**
- * Attribute Table widget
+/*
+ * Attribute Table Widget
  */
 define(["dojo/Evented", //
 "dojo/_base/declare", //
@@ -11,7 +11,9 @@ define(["dojo/Evented", //
 "dgrid/OnDemandGrid", //
 "dgrid/Keyboard", //
 "dgrid/Selection", //
-"esri/layers/GraphicsLayer"], function(Evented, //
+"dgrid/extensions/ColumnHider", //
+"esri/layers/GraphicsLayer"], //
+function(Evented, //
 declare, //
 lang, //
 Deferred, //
@@ -21,9 +23,16 @@ i18n, //
 Grid, //
 Keyboard, //
 Selection, //
+ColumnHider, //
 GraphicsLayer) {
 	return declare([Evented], {
 		config : {},
+
+		/*
+		 * @param {Object} options
+		 * @param {esri/Map} map
+		 * @param {String} targetId
+		 */
 		constructor : function(options, map, targetId) {
 
 			this._map = map;
@@ -42,7 +51,7 @@ GraphicsLayer) {
 
 			// Initialize Memory Store and DGrid
 			this.store = new Memory();
-			this.grid = declare([ Grid, Keyboard, Selection ])({
+			this.grid = declare([ Grid, Keyboard, Selection, ColumnHider ])({
 				store : this.store
 			}, this._targetId);
 
@@ -83,6 +92,9 @@ GraphicsLayer) {
 		/*
 		 * Change current feature layer,
 		 * redefines the dgrid columns and populates the store.
+		 *
+		 * @param {FeatureLayer} featureLayer
+		 * @param {Object} [options]
 		 */
 		setFeatureLayer : function(featureLayer, options) {
 
@@ -92,29 +104,42 @@ GraphicsLayer) {
 
 			this.columns = [];
 
-			this.dataConfig = {};
+			var hiddenColumns = this.config.hiddenColumnsLowerCase || [];
+
+			var columnsConfig = {};
 
 			var idProperty = "id";
 
 			// If specific fields were defined in the config file for this layer
 			if (this.config.featureLayers && this.config.featureLayers[featureLayer.url]) {
 
-				this.dataConfig.fields = this.config.featureLayers[featureLayer.url].fields;
+				columnsConfig.fields = this.config.featureLayers[featureLayer.url].fields;
 
-				if (this.dataConfig.fields) {
-					for (var i in this.dataConfig.fields) {
+				if (columnsConfig.fields) {
+					for (var i in columnsConfig.fields) {
 
-						if (this.dataConfig.fields[i].toLowerCase() == "objectid") {
-							idProperty = this.dataConfig.fields[i];
+						if (columnsConfig.fields[i].toLowerCase() == "objectid") {
+							idProperty = columnsConfig.fields[i];
 						}
 
 						for (var j in featureLayer.fields) {
 
-							if (featureLayer.fields[j].name == this.dataConfig.fields[i]) {
+							if (featureLayer.fields[j].name == columnsConfig.fields[i]) {
+
+								var isHidden = false;
+								if (hiddenColumns) {
+									for (var k in hiddenColumns) {
+										if (featureLayer.fields[j].name.toLowerCase().indexOf(hiddenColumns[k]) >= 0) {
+											isHidden = true;
+											break;
+										}
+									}
+								}
 
 								this.columns.push({
 									field : featureLayer.fields[j].name,
-									label : featureLayer.fields[j].alias
+									label : featureLayer.fields[j].alias,
+									hidden : isHidden
 								});
 								break;
 							}
@@ -125,12 +150,25 @@ GraphicsLayer) {
 				}
 
 			}
-			// Add all of the layer's fields (except editor / shape / globalid fields)
+			// Add all of the layer's fields (keep editor / shape / globalid fields hidden)
 			else {
+
 				for (var i in featureLayer.fields) {
+
+					var isHidden = false;
+					if (hiddenColumns) {
+						for (var j in hiddenColumns) {
+							if (featureLayer.fields[i].name.toLowerCase().indexOf(hiddenColumns[j]) >= 0) {
+								isHidden = true;
+								break;
+							}
+						}
+					}
+
 					this.columns.push({
 						field : featureLayer.fields[i].name,
-						label : featureLayer.fields[i].alias
+						label : featureLayer.fields[i].alias,
+						hidden : isHidden
 					});
 				}
 			}
